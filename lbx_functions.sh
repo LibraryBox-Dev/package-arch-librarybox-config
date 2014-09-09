@@ -25,7 +25,7 @@ do_disable_wifi_hotspot(){
 }
 
 do_timesave_enable() {
-	${PIRATEBOX_FOLDER}/bin/timesave.sh  install
+	${PIRATEBOX_FOLDER}/bin/timesave.sh ${PIRATEBOX_FOLDER}/conf/piratebox.conf  install
 	systemctl enable cronie.service
 
 	echo "
@@ -33,7 +33,7 @@ do_timesave_enable() {
 Description=Restore fake RTC-time
 
 [Service]
-ExecStart=/bin/bash ${PIRATEBOX_FOLDER}/bin/timesave.sh recover
+ExecStart=/bin/bash ${PIRATEBOX_FOLDER}/bin/timesave.sh ${PIRATEBOX_FOLDER}/conf/piratebox.conf recover
 
 [Install]
 WantedBy=multi-user.target 
@@ -88,7 +88,6 @@ WantedBy=multi-user.target
 " >  /etc/systemd/system/make_swap.service
 systemctl enable make_swap.service
 
-whiptail --msgbox "SWAP Partition created. it will be installed during next boot"
 
 }
 
@@ -122,8 +121,6 @@ ExecStart=/bin/bash /bin/cli_lbx.sh do_ext_step2
 WantedBy=multi-user.target 
 " >  /etc/systemd/system/make_ext.service
 systemctl enable make_ext.service
-
-whiptail --msgbox "EXT Partition created. it will be installed during next boot"
 
 }
 
