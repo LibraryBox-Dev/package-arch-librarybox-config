@@ -1,0 +1,4 @@
+pkg/
+src/
+raspi-config
+*.pkg.tar.xz
