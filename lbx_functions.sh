@@ -2,9 +2,15 @@
 
 PIRATEBOX_FOLDER=/opt/piratebox
 PIRATEBOX_CONFIG="${PIRATEBOX_FOLDER}"/conf/piratebox.conf
+PIRATEBOX_HOSTAPD_CONF="${PIRATEBOX_FOLDER}"/conf/hostapd.conf
 
 FTP_CONFIG_SCRIPT="${PIRATEBOX_FOLDER}""/bin/ftp_enable.sh"
 FTP_CONFIG_AVAILABLE="-e $FTP_CONFIG_SCRIPT"
+
+### Minidlna service-file
+MINIDLNA_SERVICE=minidlna
+
+PACKAGE_LOCATION=/root/packages
 
 
 ### Configuration stuff
@@ -133,3 +139,55 @@ do_ext_step2(){
 }
 
 
+do_enable_minidlna(){
+	## LibraryBox config file copy once (piratebox is the targetfolder for the logfile)
+	grep -q piratebox /etc/minidlna.conf || cp ${PIRATEBOX_FOLDER}/src/linux.example.minidlna.conf  /etc/minidlna.conf
+
+	systemctl start $MINIDLNA_SERVICE
+	systemctl enable $MINIDLNA_SERVICE
+}
+
+do_disable_minidlna(){
+        systemctl stop    $MINIDLNA_SERVICE
+        systemctl disable $MINIDLNA_SERVICE
+}
+
+
+_remove_installed_hostapd(){
+	#get current installed
+	local installed_package=$( pacman -Qs hostapd | head -n 1 | cut -d ' ' -f 1)
+	RC=$?
+	if [ "$RC" = "0" ] ; then
+		echo "package found: $insalled_package"
+		pacman --noconfirm -R $installed_package
+		return $?
+	fi
+	return $RC
+
+}
+
+do_switch_to_hostapd_generic(){
+	_remove_installed_hostapd && echo "Removed old package"
+	local package_path="${PACKAGE_LOCATION}"/hostapd-?.?-*.pkg.*
+	pacman --noconfirm --force -U $package_path && \
+		sed 's#driver=.*#driver=nl80211#'   -i $PIRATEBOX_HOSTAPD_CONF
+	return $?
+}
+
+
+do_switch_to_hostapd_8188eu(){
+	_remove_installed_hostapd && echo "Removed old package"
+	local package_path="${PACKAGE_LOCATION}"/hostapd-8188eu-?.?-*.pkg.*
+	pacman --noconfirm --force -U $package_path && \
+		sed 's#driver=.*#driver=rtl871xdrv#'   -i $PIRATEBOX_HOSTAPD_CONF
+	return $?
+}
+
+
+do_switch_to_hostapd_8192cu(){
+	_remove_installed_hostapd && echo "Removed old package"
+	local package_path="${PACKAGE_LOCATION}"/hostapd-8192cu-?.?-*.pkg.*
+	pacman --noconfirm --force -U $package_path && \
+		sed 's#driver=.*#driver=rtl871xdrv#'   -i $PIRATEBOX_HOSTAPD_CONF
+	return $?
+}

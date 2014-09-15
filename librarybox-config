@@ -13,11 +13,14 @@ ASK_TO_REBOOT=0
 
 . $(dirname $0)/lbx_functions.sh
 
+
+
+
 calc_wt_size() {
   # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
   # output from tput. However in this case, tput detects neither stdout or 
   # stderr is a tty and so only gives default 80, 24 values
-  WT_HEIGHT=17
+  WT_HEIGHT=20
   WT_WIDTH=$(tput cols)
 
   if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
@@ -89,19 +92,65 @@ run_lbx_ftp_config(){
 	/opt/piratebox/bin/ftp_enable.sh
 }
 
+
+run_minidlna_toggle(){
+	MINIDLNA_STATUS=$(systemctl is-enabled minidlna) 
+	if [ "$MINIDLNA_STATUS" = "disabled" ] ; then
+		do_enable_minidlna
+		if [ $? -eq 0 ] ; then
+			whiptail --msgbox "Minidlna enabled" 20 70 1
+		else
+			whiptail --msgbox "There was an error during enabling minidlna ..." 20 70 1
+		fi
+	else
+		do_disable_minidlna
+		if [ $? -eq 0 ] ; then
+			whiptail --msgbox "Minidlna disabled" 20 70 1
+		else
+			whiptail --msgbox "There was an error during disabling minidlna ..." 20 70 1
+		fi
+	fi
+}
+
+
+run_ethernet_setup(){
+	local lan_dhcp_enbled=$( echo "test" )
+
+}
+
+run_wifi_dongle_select(){
+	local usb_wifi_search=$(lsusb | grep 802)
+
+	whiptail --msgbox "Found the following USB wifi (only simple indication): 
+
+${usb_wifi_search}
+
+
+take a notice down on a paper for the next step
+
+" 20 70 5
+
+
+}
+
+
 #
 # Interactive use loop
 #
 calc_wt_size
 while true; do
+	MINIDLNA_STATUS=$(systemctl is-enabled minidlna) 
 	FUN=$(whiptail --title "LibraryBox Configuration Tool - ArchLinux" --menu "Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
 	"1  Enable   USB Wifi" "Enables USB wifi including a Wait-Time; Reboot required" \
 	"2  Disable  USB Wifi" "Disabled enabled wifi setup; Reboot required" \
 	"3  Date&Time" "Setup Date and Time" \
 	"4  Timesave"  "Setup Fake RTC and init. cron" \
 	"5  FTP-Config" "Launch FTP LibraryBox Setup" \
-	"8  Change root password" "Changes default password for root user" \
-	"9  About librarybox-config" "Information about this tool" \
+	"6  Minidlna startup" " ${MINIDLNA_STATUS} ;  Toggle it" \
+	"7  Ethernet port" "Change setup of ethernet port" \
+	"8  Change hostapd" "Needed for some wifi drivers" \
+	"9  Change root password" "Changes default password for root user" \
+	"F  About librarybox-config" "Information about this tool" \
 	 3>&1 1>&2 2>&3 )
 	RET=$?
 	if [ $RET -eq 1 ]; then
@@ -113,8 +162,11 @@ while true; do
 			3\ *) run_dateTime ;;
 			4\ *) run_timesave ;;
 			5\ *) run_lbx_ftp_config ;;
-			8\ *) run_change_pass_root ;;
-			9\ *) run_about ;;
+			6\ *) run_minidlna_toggle ;;
+			7\ *) run_ethernet_setup ;;
+			8\ *) run_wifi_dongle_select ;;
+			9\ *) run_change_pass_root ;;
+			F\ *) run_about ;;
 		esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
 	else
 		exit 1
