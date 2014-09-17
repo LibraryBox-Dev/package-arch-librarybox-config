@@ -25,7 +25,7 @@ options=()
 install=
 changelog=
 source=(lbx_functions.sh
-        librarybox_config
+        librarybox-config
 	cli_lbx.sh)
 noextract=()
 md5sums=() #generate with 'makepkg -g'
@@ -34,6 +34,6 @@ md5sums=() #generate with 'makepkg -g'
 package() {
 	mkdir -p $pkgdir/bin
 	cp lbx_functions.sh $pkgdir/bin
-	cp librarybox_config $pkgdir/bin
+	cp librarybox-config $pkgdir/bin
 	cp cli_lbx.sh $pkgdir/bin
 }

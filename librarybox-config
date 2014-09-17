@@ -82,10 +82,10 @@ run_timesave(){
 }
 
 run_dateTime(){
-	in_time=$(whiptail --inputbox "Setup time, use format HHmm"  20 60 'HHmm' 3>&1 1>&2 2>&3 )
-	in_date=$(whiptail --inputbox "Setup date, use format YYYYMMdd"  20 60 'YYYYMMdd' 3>&1 1>&2 2>&3 )
+	in_time=$(whiptail --inputbox "Setup time, use format HH:mm:ss"  20 60 'HH:mm:ss' 3>&1 1>&2 2>&3 )
+	in_date=$(whiptail --inputbox "Setup date, use format YYYY-MM-dd"  20 60 'YYYY-MM-dd' 3>&1 1>&2 2>&3 )
 	echo "${in_date}${in_time}" 
-	[[ $DEBUG ]] || date  "${in_date}${in_time}"  
+	[[ $DEBUG ]] || date -s  "${in_date} ${in_time}"  
 }
 
 run_lbx_ftp_config(){
@@ -126,11 +126,43 @@ run_wifi_dongle_select(){
 ${usb_wifi_search}
 
 
-take a notice down on a paper for the next step
+take a notice down on a paper for the next step.
+If that is empty, you have to checkout google for you wifi stick, which chipset is included
 
-" 20 70 5
+" 20 70 9
+
+	local enabled_package=$( get_installed_hostapd  ) 
+
+	local status_generic='off'
+	local status_8818eu='off'
+	local status_8192cu='off'
 
 
+	case "$enabled_package" in
+		"local/hostapd") status_generic='on';;
+		"local/hostapd-8188eu") status_8818eu='on';;
+		"local/hostapd-8192cu") status_8192cu='on';;
+	esac
+
+	local WIFI=$(whiptail --title "LibraryBox hostpad selection - ArchLinux" --radiolist "Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
+	"1 Generic"  "Install a generic USB hostapd (default)" $status_generic  \
+	"2 8818eu "  "Switch to USB with Realtek 8818eu based chipset" $status_8818eu \
+	"3 8192cu"   "Switch to USB with Realtek 8192cu based chipset" $status_8192cu \
+	3>&1 1>&2 2>&3 )
+	local RET=$?
+	if [ "$RET" =  "1" ]; then 
+		return 0
+	elif [ "$RET" =  "0" ]; then
+		case "$WIFI" in 
+			1\ *) do_switch_to_hostapd_generic ;;
+			2\ *) do_switch_to_hostapd_8188eu  ;;
+			3\ *) do_switch_to_hostapd_8192cu  ;;
+		esac || whiptail --msgbox "There was an error running option $WIFI" 20 60 1
+	else
+		whiptail --msgbox "Unknown function $WIFI" 20 60 1
+		return 1
+	fi
+	
 }
 
 
@@ -148,7 +180,7 @@ while true; do
 	"5  FTP-Config" "Launch FTP LibraryBox Setup" \
 	"6  Minidlna startup" " ${MINIDLNA_STATUS} ;  Toggle it" \
 	"7  Ethernet port" "Change setup of ethernet port" \
-	"8  Change hostapd" "Needed for some wifi drivers" \
+	"8  Change hostapd (WIFI)" "Needed for some wifi drivers" \
 	"9  Change root password" "Changes default password for root user" \
 	"F  About librarybox-config" "Information about this tool" \
 	 3>&1 1>&2 2>&3 )

@@ -10,7 +10,7 @@ FTP_CONFIG_AVAILABLE="-e $FTP_CONFIG_SCRIPT"
 ### Minidlna service-file
 MINIDLNA_SERVICE=minidlna
 
-PACKAGE_LOCATION=/root/packages
+PACKAGE_LOCATION=/prebuild
 
 
 ### Configuration stuff
@@ -153,22 +153,30 @@ do_disable_minidlna(){
 }
 
 
+get_installed_hostapd(){
+
+	local installed=$(pacman -Qs hostapd | head -n 1 | cut -d ' ' -f 1)
+	echo $installed
+	return 0
+}
+
 _remove_installed_hostapd(){
 	#get current installed
 	local installed_package=$( pacman -Qs hostapd | head -n 1 | cut -d ' ' -f 1)
 	RC=$?
 	if [ "$RC" = "0" ] ; then
 		echo "package found: $insalled_package"
-		pacman --noconfirm -R $installed_package
+		pacman -dd --noconfirm -R $installed_package
 		return $?
 	fi
 	return $RC
 
 }
 
+
 do_switch_to_hostapd_generic(){
 	_remove_installed_hostapd && echo "Removed old package"
-	local package_path="${PACKAGE_LOCATION}"/hostapd-?.?-*.pkg.*
+	local package_path="${PACKAGE_LOCATION}"/hostapd/hostapd-?.?-*.pkg.*
 	pacman --noconfirm --force -U $package_path && \
 		sed 's#driver=.*#driver=nl80211#'   -i $PIRATEBOX_HOSTAPD_CONF
 	return $?
@@ -177,7 +185,7 @@ do_switch_to_hostapd_generic(){
 
 do_switch_to_hostapd_8188eu(){
 	_remove_installed_hostapd && echo "Removed old package"
-	local package_path="${PACKAGE_LOCATION}"/hostapd-8188eu-?.?-*.pkg.*
+	local package_path="${PACKAGE_LOCATION}"/hostapd/hostapd-8188eu-?.?-*.pkg.*
 	pacman --noconfirm --force -U $package_path && \
 		sed 's#driver=.*#driver=rtl871xdrv#'   -i $PIRATEBOX_HOSTAPD_CONF
 	return $?
@@ -186,7 +194,7 @@ do_switch_to_hostapd_8188eu(){
 
 do_switch_to_hostapd_8192cu(){
 	_remove_installed_hostapd && echo "Removed old package"
-	local package_path="${PACKAGE_LOCATION}"/hostapd-8192cu-?.?-*.pkg.*
+	local package_path="${PACKAGE_LOCATION}"/hostapd/hostapd-8192cu-?.?_*.pkg.*
 	pacman --noconfirm --force -U $package_path && \
 		sed 's#driver=.*#driver=rtl871xdrv#'   -i $PIRATEBOX_HOSTAPD_CONF
 	return $?
