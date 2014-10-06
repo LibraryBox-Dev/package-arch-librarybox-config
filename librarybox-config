@@ -113,8 +113,39 @@ run_minidlna_toggle(){
 }
 
 
+_test_netctl_status_() {
+	local profile=$1
+
+	if netctl is-enabled lan_dhcp 2>&1  >> /dev/null ; then
+		 echo "on" 
+	else
+		 echo "off"
+	fi
+	return 0 
+}
+
 run_ethernet_setup(){
-	local lan_dhcp_enbled=$( echo "test" )
+	local lan_dhcp_enbled=$( _test_netctl_status_('lan_dhcp' ) )
+	local lan_piratebox_enbled=$( _test_netctl_status_('lan_piratebox_bridge' ) )
+
+        local NETCTL=$(whiptail --title "LibraryBox ethernet selection - ArchLinux" --radiolist "Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
+        "1 PirateBox "  "Ethernet included to LibraryBox Adress distribution" $lan_piratebox_enbled \
+        "2 DHCP"  "Use Ethernet port independend from LibraryBox" $lan_dhcp_enbled  \
+        3>&1 1>&2 2>&3 )
+        local RET=$?
+        if [ "$RET" =  "1" ]; then 
+                return 0
+        elif [ "$RET" =  "0" ]; then
+                case "$NETCTL" in 
+                        1\ *) do_netctl_lan_to_piratebox ;;
+                        2\ *) do_netctl_lan_as_single_dhcp  ;;
+                esac || whiptail --msgbox "There was an error running option $NETCTL" 20 60 1
+		 ASK_TO_REBOOT=1
+        else
+                whiptail --msgbox "Unknown function $NETCTL" 20 60 1
+                return 1
+        fi
+	return 0
 
 }
 
@@ -158,11 +189,12 @@ If that is empty, you have to checkout google for you wifi stick, which chipset 
 			2\ *) do_switch_to_hostapd_8188eu  ;;
 			3\ *) do_switch_to_hostapd_8192cu  ;;
 		esac || whiptail --msgbox "There was an error running option $WIFI" 20 60 1
+		 ASK_TO_REBOOT=1
 	else
 		whiptail --msgbox "Unknown function $WIFI" 20 60 1
 		return 1
 	fi
-	
+
 }
 
 
