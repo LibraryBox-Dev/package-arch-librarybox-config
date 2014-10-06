@@ -158,7 +158,8 @@ ${usb_wifi_search}
 
 
 take a notice down on a paper for the next step.
-If that is empty, you have to checkout google for you wifi stick, which chipset is included
+If that is empty, you have to checkout google for you wifi stick, which chipset is included.
+You can use the command 'lsusb' on the command line to get the list of connected devices.
 
 " 20 70 9
 
@@ -197,6 +198,29 @@ If that is empty, you have to checkout google for you wifi stick, which chipset 
 
 }
 
+#
+# Launch confirmation menu for SD Card setup and run the steps.
+#
+do_sd_card(){
+	whiptail --title "LibraryBox SD Card - Setup" --yesno "Do you want to setup the SD-Card?" 20 60
+	RC=$?
+
+	if [ "$RC" = "0" ] ; then
+		# run setup steps
+		do_swapon_step1 
+		if [ "$?" = "11" ] ; then
+			whiptail --title "LibraryBox SD Card - Setup" --msgbox "Swap partition already exists" 20 60 1
+		fi 	
+		do_ext_step1
+		if [ "$?" = "11" ] ; then
+			whiptail --title "LibraryBox SD Card - Setup" --msgbox "Data partition already exists" 20 60 1
+		fi
+		ASK_TO_REBOOT=1
+	else
+		return 0
+	fi
+}
+
 
 #
 # Interactive use loop
@@ -205,15 +229,16 @@ calc_wt_size
 while true; do
 	MINIDLNA_STATUS=$(systemctl is-enabled minidlna) 
 	FUN=$(whiptail --title "LibraryBox Configuration Tool - ArchLinux" --menu "Options" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
-	"1  Enable   USB Wifi" "Enables USB wifi including a Wait-Time; Reboot required" \
-	"2  Disable  USB Wifi" "Disabled enabled wifi setup; Reboot required" \
-	"3  Date&Time" "Setup Date and Time" \
-	"4  Timesave"  "Setup Fake RTC and init. cron" \
-	"5  FTP-Config" "Launch FTP LibraryBox Setup" \
-	"6  Minidlna startup" " ${MINIDLNA_STATUS} ;  Toggle it" \
-	"7  Ethernet port" "Change setup of ethernet port" \
-	"8  Change hostapd (WIFI)" "Needed for some wifi drivers" \
-	"9  Change root password" "Changes default password for root user" \
+	"1   Enable   USB Wifi" "Enables USB wifi including a Wait-Time; Reboot required" \
+	"2   Disable  USB Wifi" "Disabled enabled wifi setup; Reboot required" \
+	"3   Date&Time" "Setup Date and Time" \
+	"4   Timesave"  "Setup Fake RTC and init. cron" \
+	"5   FTP-Config" "Launch FTP LibraryBox Setup" \
+	"6   Minidlna startup" " ${MINIDLNA_STATUS} ;  Toggle it" \
+	"7   Ethernet port" "Change setup of ethernet port" \
+	"8   Change hostapd (WIFI)" "Needed for some wifi drivers" \
+	"9   Change root password" "Changes default password for root user" \
+	"10  SD-Card prepare" "Create & format swap and data partition." \
 	"F  About librarybox-config" "Information about this tool" \
 	 3>&1 1>&2 2>&3 )
 	RET=$?
@@ -230,6 +255,7 @@ while true; do
 			7\ *) run_ethernet_setup ;;
 			8\ *) run_wifi_dongle_select ;;
 			9\ *) run_change_pass_root ;;
+			10\ *) run_sd_card ;;
 			F\ *) run_about ;;
 		esac || whiptail --msgbox "There was an error running option $FUN" 20 60 1
 	else

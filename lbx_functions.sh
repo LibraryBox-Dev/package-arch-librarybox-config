@@ -17,6 +17,7 @@ PACKAGE_LOCATION=/prebuild
 SWAP_PARTITION="/dev/mmcblk0p3"
 EXT_PARTITION="/dev/mmcblk0p4"
 EXT_MOUNTPOINT="/mnt/sdcard"
+USB_MOUNTPOINT="/mnt/usb"
 
 do_enable_wifi_hotspot(){
 	sed 's|DO_BRIDGE="no"|DO_BRIDGE="yes"|' 	-i  $PIRATEBOX_CONFIG
@@ -70,7 +71,12 @@ do_launch_ftp_setup(){
 	fi
 }
 
+
 do_swapon_step1(){
+
+if [ -e ${SWAP_PARTITION} ]  ; then 
+	return 11
+fi
 
 fdisk /dev/mmcblk0 <<EOF
 n
@@ -99,12 +105,16 @@ systemctl enable make_swap.service
 
 do_swapon_step2(){
 	mkswap ${SWAP_PARTITION}
-	echo "${SWAP_PARTITION}    none swap defaults 0 0" >> /etc/fstab 
+	grep -q "${SWAP_PARTITION}" /etc/fstab || echo "${SWAP_PARTITION}    none swap defaults 0 0" >> /etc/fstab 
 	systemctl disable make_swap.service
 	swapon ${SWAP_PARTITION}
 }
 
 do_ext_step1(){
+
+if [ -e ${EXT_MOUNTPOINT} ]  ; then 
+	return 11
+fi
 
 fdisk /dev/mmcblk0 <<EOF
 n
@@ -133,7 +143,7 @@ systemctl enable make_ext.service
 do_ext_step2(){
 	mkdir -p  ${EXT_MOUNTPOINT}
 	mkfs.ext4 ${EXT_PARTITION}
-        echo "${EXT_PARTITION}     ${EXT_MOUNTPOINT}   auto defaults 0 0" >> /etc/fstab
+        grep -q "${EXT_MOUNTPOINT}" /etc/fstab || echo "${EXT_PARTITION}     ${EXT_MOUNTPOINT}   auto defaults 0 0" >> /etc/fstab
         systemctl disable make_ext.service
         mount ${EXT_MOUNTPOINT} 
 }
